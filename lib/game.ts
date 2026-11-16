@@ -168,7 +168,7 @@ export const NO_CLIENT = 'Sin cliente'
 /** Cómo se muestran los proyectos sin cliente: los propios (LinkedIn, CV, tu web). */
 export const PERSONAL = 'Personal'
 /** Etiqueta del filtro por plataforma: incluye las tareas sin proyecto. */
-export const PERSONAL_FILTER = 'Personal (sin plataforma)'
+export const PERSONAL_FILTER = 'Personal'
 export const NO_PROJECT = 'Sin proyecto'
 export const NO_PROJECT_COLOR = '#9b9a97'
 
