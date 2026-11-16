@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react'
 import { CalendarDays, Check, List, Pencil, Play, Plus, Repeat, Search, StickyNote, Trash2, X } from 'lucide-react'
-import { PERSONAL, canBill, dateKey, fmtHours, fmtMoney, parseTags, uid, type Client, type PlanItem, type Project, type Routine, type Task } from '@/lib/game'
+import { PERSONAL, PERSONAL_FILTER, canBill, dateKey, fmtHours, fmtMoney, parseTags, uid, type Client, type PlanItem, type Project, type Routine, type Task } from '@/lib/game'
 import { CalendarView } from './calendar-view'
 import { ExportMenu } from './export-menu'
 import { MultiFilter } from './multi-filter'
@@ -270,8 +270,8 @@ export function TasksView({ tasks, backlog, routines, setRoutines, onStartRoutin
       <div className="task-filters">
         <div className="segmented small" role="tablist" aria-label="Fechas">{RANGES.map((r) => <button key={r.id} role="tab" aria-selected={range === r.id} className={range === r.id ? 'seg-on' : ''} onClick={() => setRange(r.id)}>{r.label}</button>)}</div>
         {range === 'rango' && <span className="date-range"><input type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="Desde" /> – <input type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="Hasta" /></span>}
-        <MultiFilter options={[...clients.map((c) => ({ id: c.id, label: c.name })), { id: 'personal', label: PERSONAL }]} value={clientIds} onChange={(v) => { setClientIds(v); setProjectId('') }} allLabel="Todas las plataformas" noun="plataformas" />
-        <select value={projectId} onChange={(e) => setProjectId(e.target.value)} aria-label="Filtrar por proyecto"><option value="">Todos los proyectos</option>{projectOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+        <MultiFilter options={[...clients.map((c) => ({ id: c.id, label: c.name })), { id: 'personal', label: PERSONAL_FILTER }]} value={clientIds} onChange={(v) => { setClientIds(v); setProjectId('') }} allLabel="Todas las plataformas" noun="plataformas" />
+        {!(clientIds.length === 1 && clientIds[0] === 'personal') && <select value={projectId} onChange={(e) => setProjectId(e.target.value)} aria-label="Filtrar por proyecto"><option value="">Todos los proyectos</option>{projectOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>}
         {filtering && <button className="text-button" onClick={() => { setQuery(''); setRange('todo'); setProjectId(''); setClientIds([]) }}><X /> Limpiar</button>}
       </div>
       {filtering && visible.length > 0 && <p className="filter-total">{visible.length} tarea{visible.length === 1 ? '' : 's'} · <b>{fmtHours(totalSeconds)}</b>{totalAmount > 0 && <> · <b>US$ {fmtMoney(totalAmount)}</b></>}</p>}

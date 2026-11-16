@@ -15,6 +15,7 @@ import {
   PAY_METHODS,
   PAYMENT_KIND_LABEL,
   PERSONAL,
+  PERSONAL_FILTER,
   PALETTE,
   billingOf,
   dateKey,
@@ -398,7 +399,7 @@ export function ClientsView({ clients, projects, tasks, payments, setClients, se
         <label className="search-input clients-search"><Search /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar plataforma o proyecto" aria-label="Buscar plataforma o proyecto" />{query && <button className="icon-button" onClick={() => setQuery('')} aria-label="Limpiar búsqueda"><X /></button>}</label>
       </div>
       <div className="task-filters">
-        <MultiFilter options={[...clients.map((c) => ({ id: c.id, label: c.name })), { id: 'personal', label: PERSONAL }]} value={clientFilter} onChange={setClientFilter} allLabel="Todas las plataformas" noun="plataformas" />
+        <MultiFilter options={[...clients.map((c) => ({ id: c.id, label: c.name })), { id: 'personal', label: PERSONAL_FILTER }]} value={clientFilter} onChange={setClientFilter} allLabel="Todas las plataformas" noun="plataformas" />
         <select value={projectStatus} onChange={(e) => setProjectStatus(e.target.value as ProjectStatus | '')} aria-label="Estado de los proyectos"><option value="activo">Proyectos activos</option><option value="pausado">Proyectos pausados</option><option value="terminado">Proyectos terminados</option><option value="">Todos los proyectos</option></select>
         {(clientFilter.length > 0 || projectStatus !== 'activo' || statusFilter) && <button className="text-button" onClick={() => { setClientFilter([]); setProjectStatus('activo'); setStatusFilter('') }}><X /> Limpiar</button>}
       </div>
