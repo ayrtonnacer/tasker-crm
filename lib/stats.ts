@@ -61,7 +61,7 @@ export function buildEntries(tasks: Task[], payments: Payment[], projects: Proje
   }
   const fromTasks = tasks.map((t) => ({
     date: t.date, seconds: t.seconds, amount: t.amount, billable: t.billable, projectId: t.projectId,
-    name: t.name, tags: t.tags, isTask: true, valueSeconds: 0, imputed: 0, ...names(t.projectId, t.project, t.client, t.color),
+    name: t.name, tags: t.tags, isTask: true, valueSeconds: 0, imputed: 0, ...names(t.projectId, t.project, t.client === NO_CLIENT ? PERSONAL : t.client, t.color),
   }))
   // Los pagos por horas (payout) no entran: esas horas ya están en las tareas. Sólo cuentan como cobrado.
   const fromPayments = payments.filter((p) => p.paid && paymentKind(p) !== 'payout').map((p) => ({

@@ -79,7 +79,7 @@ function projectSelect(s, value, onChange) {
   const sel = $('select', { 'aria-label': 'Proyecto' })
   const groups = new Map()
   s.projects.forEach((p) => groups.set(p.client, [...(groups.get(p.client) || []), p]))
-  sel.append($('option', { value: '', textContent: 'Elegí un proyecto' }))
+  sel.append($('option', { value: '', textContent: 'Sin proyecto (personal)' }))
   groups.forEach((list, client) => { const g = $('optgroup', { label: client }); list.forEach((p) => g.append($('option', { value: p.id, textContent: p.name }))); sel.append(g) })
   sel.value = s.projects.some((p) => p.id === value) ? value : ''
   sel.onchange = () => onChange(sel.value)
@@ -153,8 +153,7 @@ async function render() {
     const note = $('textarea', { rows: 3, placeholder: 'Memo: indicaciones de la tarea o qué hiciste…', maxLength: 20000, value: form.note, oninput: () => { form.note = note.value } })
     const sel = projectSelect(s, form.projectId, (id) => { form.projectId = id || null; form.billable = null; void render() })
     const go = $('button', { className: 'primary', textContent: '▶ Empezar', onclick: async () => {
-      if (!form.projectId) { message = 'Elegí un proyecto: cada tarea va a una plataforma o a Personal.'; return render() }
-      chrome.storage.local.set({ lastProject: form.projectId })
+      chrome.storage.local.set({ lastProject: form.projectId || '' })
       const cmd = { type: 'start', name: form.name.trim(), ref: form.ref.trim(), tags: form.tags, note: form.note, projectId: form.projectId, billable: billableNow() }
       resetForm()
       await send(cmd, (st) => st.running)
@@ -181,10 +180,9 @@ async function render() {
 
     // Atajos: lo que hay por hacer, las rutinas de hoy y lo reciente. Cada uno arranca con su proyecto, memo y etiquetas.
     const pickProject = () => (form.projectId ? { projectId: form.projectId } : {})
-    const needProject = (item) => !item.projectId && !form.projectId
     const list = (title, items, start) => items.length ? $('div', { className: 'recent' }, $('h3', { textContent: title }), items.map((it) => {
       const p = projectOf(it.projectId)
-      return $('button', { type: 'button', title: it.note || 'Empezar', onclick: () => { if (needProject(it)) { message = 'Elegí un proyecto arriba para esta tarea.'; return void render() } resetForm(); void start(it) } },
+      return $('button', { type: 'button', title: it.note || 'Empezar', onclick: () => { resetForm(); void start(it) } },
         $('span', { textContent: it.text || it.name }), $('span', { className: 'chip' }, p ? [dot(p.color), p.name] : '', ' ▶'))
     })) : ''
     root.append(

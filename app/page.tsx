@@ -129,7 +129,6 @@ export default function Page() {
   const [syncOpen, setSyncOpen] = useState(false)
   const [suggestOpen, setSuggestOpen] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
-  const [pickerKey, setPickerKey] = useState(0)
   const timers = useRef<number[]>([])
 
   const running = active.startedAt !== null
@@ -358,22 +357,17 @@ export default function Page() {
   }
 
   function pickProject(projectId: string | null) {
-    // Un proyecto de una plataforma arranca como facturable (se puede cambiar con el $); uno personal, nunca.
+    // Un proyecto de una plataforma arranca como facturable (se puede cambiar con el $); sin proyecto (personal), nunca.
     setDraft((d) => ({ ...d, projectId, billable: defaultBillable(projectId, projects, clients) }))
+    // Al elegir un proyecto se abre el memo para anotar de qué trata la tarea.
+    if (projectId) setNoteOpen(true)
   }
 
   function addTag(tag: string) {
     setDraft((d) => ({ ...d, tags: [...parseTags(d.tags), tag].join(', ') }))
   }
 
-  /** Toda tarea va a un proyecto (de un cliente o personal): si falta, se abre el selector. */
-  function askProject() {
-    toast('Elegí un proyecto', 'Cada tarea va a un proyecto de una plataforma o a Personal.')
-    setPickerKey((k) => k + 1)
-  }
-
   function startTask() {
-    if (!draft.projectId) return askProject()
     const t = Date.now()
     setNow(t)
     setActive((a) => ({ ...a, startedAt: t, startTime: a.startTime ?? timeKey(), startDate: a.startDate ?? (a.startTime ? startDateOf(a) : dateKey()), target: a.target ?? (mode.down ? Math.max(1, mode.minutes) * 60 : undefined) }))
@@ -444,11 +438,6 @@ export default function Page() {
     setNoteOpen(!!next.note)
     setActiveTab('Inicio')
     window.scrollTo({ top: 0, behavior: 'smooth' })
-    // Sin proyecto no arranca: queda cargada en la caja para elegirlo.
-    if (!next.projectId) {
-      setActive({ base: 0, startedAt: null })
-      return askProject()
-    }
     const t = Date.now()
     setNow(t)
     setActive({ base: 0, startedAt: t, startTime: timeKey(), startDate: dateKey(), target: mode.down ? Math.max(1, mode.minutes) * 60 : undefined })
@@ -521,7 +510,6 @@ export default function Page() {
   function saveManual() {
     if (!manual) return
     if (!manual.name.trim() && !manual.ref.trim()) return setManualError('Ponele un nombre o un Task ID a la tarea.')
-    if (!manual.projectId) return setManualError('Elegí un proyecto: de una plataforma o personal.')
     const a = minutesOf(manual.from)
     const b = minutesOf(manual.to)
     if (Number.isNaN(a) || Number.isNaN(b)) return setManualError('Completá el horario de inicio y de fin.')
@@ -630,7 +618,7 @@ export default function Page() {
               )}
             </div>
             <div className="timer-controls">
-              <ProjectPicker projects={projects} clients={clients} value={draft.projectId} onChange={pickProject} onCreateProject={(p) => setProjects((cur) => [...cur, p])} openKey={pickerKey} compact />
+              <ProjectPicker projects={projects} clients={clients} value={draft.projectId} onChange={pickProject} onCreateProject={(p) => setProjects((cur) => [...cur, p])} compact />
               <label className="tags-input"><Tag /><input value={draft.tags} onChange={(e) => setDraft({ ...draft, tags: e.target.value })} placeholder="Etiquetas" aria-label="Etiquetas" /></label>
               <button className={`billable-toggle ${noteOpen || draft.note.trim() ? 'billable-on' : ''}`} onClick={() => setNoteOpen((o) => !o)} aria-pressed={noteOpen} title={draft.note.trim() ? 'Memo de la tarea' : 'Memo: pegá las indicaciones de la tarea o anotá qué hiciste'} aria-label="Memo"><StickyNote /></button>
               {draftCanBill && <button className={`billable-toggle ${draft.billable ? 'billable-on' : ''}`} onClick={() => setDraft({ ...draft, billable: !draft.billable })} aria-pressed={draft.billable} title={draft.billable ? (info.rate > 0 ? `Facturable a ${info.rate} USD/h` : 'Facturable: horas taskeadas en la plataforma') : 'No facturable'} aria-label="Facturable"><DollarSign /></button>}
@@ -648,7 +636,7 @@ export default function Page() {
               {draft.note && <small>{draft.note.length.toLocaleString('es-AR')} caracteres</small>}
             </div>
             <AutoTextarea className="memo-text" autoFocus={noteOpen && !draft.note} rows={4} value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} onKeyDown={(e) => { if (e.key === 'Escape') setNoteOpen(false) }} maxLength={20000} placeholder="Pegá las indicaciones de la tarea o anotá qué hiciste, decisiones, lo que falta…" aria-label="Memo de la tarea" />
-            <p className="memo-warning">Solo notas propias. Las plataformas prohíben compartir el contenido de las tareas: no pegues acá texto confidencial del proyecto. Los reportes para compartir y la evidencia de pagos no incluyen los memos.</p>
+            <p className="memo-warning">Solo notas propias: las plataformas prohíben compartir el contenido de las tareas, así que no pegues texto confidencial. Los memos no van en reportes ni en la evidencia de pagos.</p>
           </div>}
           <div className="timer-sub">
             {!running && mode.down && <span className="countdown-presets">Cuenta regresiva: {PRESET_MINUTES.map((m) => <button key={m} className={mode.minutes === m ? 'preset-on' : ''} onClick={() => setMode({ down: true, minutes: m })}>{m} min</button>)}<input type="number" min={1} max={600} value={mode.minutes} onChange={(e) => setMode({ down: true, minutes: Math.min(600, Math.max(1, Math.round(Number(e.target.value)) || 1)) })} aria-label="Minutos" /> min</span>}
@@ -657,7 +645,7 @@ export default function Page() {
             </button>}
             {running && active.target && <span>Cuenta regresiva de {fmtHours(active.target)}: al llegar a cero se registra sola</span>}
             {running && liveGold > 0 && <span>+US$ {fmtMoney(liveGold)} · {info.rate} USD/h</span>}
-            {running && info.billing !== 'hora' && <span>{info.billing === 'interno' ? 'Proyecto personal: suma tiempo, no plata' : 'Se cobra por pagos: el tiempo te muestra cuánto rinde la hora'}</span>}
+            {running && info.billing !== 'hora' && <span>{info.billing === 'interno' ? 'Personal: suma tiempo, no plata' : 'Se cobra por pagos: el tiempo te muestra cuánto rinde la hora'}</span>}
             {resourceLinks(info.project, info.client).map((l, i) => <LinkChip key={i} link={l} />)}
             {!running && suggestedTags.length > 0 && <span className="tag-suggestions">{suggestedTags.map((t) => <button key={t} onClick={() => addTag(t)}>+ {t}</button>)}</span>}
           </div>
@@ -729,7 +717,7 @@ export default function Page() {
           <label>Etiquetas<input placeholder="diseño, reunión" value={manual.tags} onChange={(e) => setManual({ ...manual, tags: e.target.value })} /></label>
           <div className="modal-fields three"><label>Fecha<input type="date" value={manual.date} onChange={(e) => setManual({ ...manual, date: e.target.value })} /></label><label>Desde<input type="time" value={manual.from} onChange={(e) => setManual({ ...manual, from: e.target.value })} /></label><label>Hasta<input type="time" value={manual.to} onChange={(e) => setManual({ ...manual, to: e.target.value })} /></label></div>
           <label>Memo<AutoTextarea className="memo-text" rows={4} max={360} value={manual.note} onChange={(e) => setManual({ ...manual, note: e.target.value })} maxLength={20000} placeholder="Notas propias: qué hiciste, lo que quedó pendiente…" /><small className="memo-warning">No pegues texto confidencial de las tareas: las plataformas lo prohíben.</small></label>
-          {canBill(manual.projectId, projects) ? <label className="check-line"><input type="checkbox" checked={manual.billable} onChange={(e) => setManual({ ...manual, billable: e.target.checked })} /> Facturable{manual.billable && (manualRate > 0 ? ` · ${manualRate} USD/h` : ' · sin tarifa por hora')}</label> : <small className="field-help">Proyecto personal: suma tiempo, no se factura.</small>}
+          {canBill(manual.projectId, projects) ? <label className="check-line"><input type="checkbox" checked={manual.billable} onChange={(e) => setManual({ ...manual, billable: e.target.checked })} /> Facturable{manual.billable && (manualRate > 0 ? ` · ${manualRate} USD/h` : ' · sin tarifa por hora')}</label> : <small className="field-help">{manual.projectId ? 'Proyecto personal' : 'Sin proyecto = personal'}: suma tiempo, no se factura.</small>}
         </div>
         {manualError && <p className="form-error">{manualError}</p>}
         <div className="modal-actions">

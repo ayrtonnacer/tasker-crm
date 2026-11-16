@@ -157,7 +157,6 @@ export function TasksView({ tasks, backlog, routines, setRoutines, onStartRoutin
     if (!routineDraft) return
     const text = routineDraft.text.trim()
     if (!text) return setRoutineError('Ponele un nombre a la rutina.')
-    if (!routineDraft.projectId) return setRoutineError('Elegí un proyecto: de una plataforma o personal.')
     if (!routineDraft.days.length) return setRoutineError('Elegí al menos un día.')
     const data = { text, projectId: routineDraft.projectId, days: [...routineDraft.days].sort(), tags: parseTags(routineDraft.tags) }
     if (routineDraft.id) setRoutines((cur) => cur.map((x) => (x.id === routineDraft.id ? { ...x, ...data } : x)))

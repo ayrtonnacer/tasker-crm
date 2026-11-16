@@ -22,7 +22,7 @@ export function TaskRow({ task, dateLabel, onDelete, onRepeat, onEdit, onToggleB
       {onSelect && <input type="checkbox" className="row-check" checked={!!selected} onChange={() => {}} onClick={(e) => onSelect(task.id, e.shiftKey)} aria-label={`Seleccionar “${task.name}”`} />}
       <button className="task-info" onClick={() => onEdit(task)} title="Editar">
         <strong>{task.name}{task.ref && <code className="ref-tag" title={`Task ID ${task.ref}`}>#{shortRef(task.ref)}</code>}</strong>
-        <span><i className="dot" style={{ background: task.color }} /> {task.project}{task.client !== 'Sin cliente' && <> · {task.client}</>}</span>
+        <span><i className="dot" style={{ background: task.color }} /> {task.project}{task.client !== 'Sin cliente' ? <> · {task.client}</> : !task.projectId && <> · Personal</>}</span>
         {task.note && <em className="task-note" title={task.note}><StickyNote /> {task.note}</em>}
       </button>
       <div className="task-tags">{task.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>

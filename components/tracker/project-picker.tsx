@@ -17,10 +17,9 @@ type Props = {
   onChange: (projectId: string | null) => void
   onCreateProject: (project: Project) => void
   compact?: boolean
-  openKey?: number // al cambiar, se abre solo (ej. al querer empezar sin proyecto)
 }
 
-export function ProjectPicker({ projects, clients, value, onChange, onCreateProject, compact, openKey }: Props) {
+export function ProjectPicker({ projects, clients, value, onChange, onCreateProject, compact }: Props) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [creating, setCreating] = useState(false)
@@ -28,10 +27,6 @@ export function ProjectPicker({ projects, clients, value, onChange, onCreateProj
   const ref = useRef<HTMLDivElement>(null)
   const selected = projects.find((p) => p.id === value) ?? null
   const selectedClient = selected ? clients.find((c) => c.id === selected.clientId) : null
-
-  useEffect(() => {
-    if (openKey) setOpen(true)
-  }, [openKey])
 
   useEffect(() => {
     if (!open) return
@@ -61,7 +56,7 @@ export function ProjectPicker({ projects, clients, value, onChange, onCreateProj
   }
 
   function create() {
-    if (!draft.name.trim()) return
+    if (!draft.name.trim() || !draft.clientId) return
     const project: Project = {
       id: uid(),
       name: draft.name.trim(),
@@ -81,8 +76,8 @@ export function ProjectPicker({ projects, clients, value, onChange, onCreateProj
     <div className="picker" ref={ref}>
       <button type="button" className={`picker-button ${selected ? 'picker-set' : ''}`} onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="listbox">
         {selected ? <i className="dot" style={{ background: selected.color }} /> : <Folder />}
-        <span className="picker-label">{selected ? selected.name : 'Elegí un proyecto'}{selectedClient && <small> · {selectedClient.name}</small>}</span>
-        {selected && <span className="picker-rate">{rateLabel(selected)}</span>}
+        <span className="picker-label">{selected ? selected.name : 'Sin proyecto'}{selectedClient && <small> · {selectedClient.name}</small>}</span>
+        {selected ? <span className="picker-rate">{rateLabel(selected)}</span> : <span className="picker-rate">personal</span>}
       </button>
       {open && (
         <div className="picker-pop" role="listbox">
@@ -90,11 +85,17 @@ export function ProjectPicker({ projects, clients, value, onChange, onCreateProj
             <>
               <div className="picker-search"><Search /><input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar proyecto o plataforma" aria-label="Buscar proyecto o plataforma" /></div>
               <div className="picker-list">
+                {!q && (
+                  <button type="button" className={`picker-item ${!value ? 'picker-active' : ''}`} onClick={() => pick(null)}>
+                    <i className="dot" style={{ background: 'var(--muted)' }} /><span>Sin proyecto</span><em>personal</em>
+                    {!value && <Check className="picker-check" />}
+                  </button>
+                )}
                 {groups.map((g) => (
                   <div key={g.id || 'none'}>
                     <p className="picker-group">{g.name}</p>
                     {g.items.map((p) => (
-                      <button type="button" key={p.id} className={`picker-item ${value === p.id ? 'picker-active' : ''}`} onClick={() => pick(p.id)}>
+                      <button type="button" key={p.id} className={`picker-item ${value === p.id ? 'picker-active' : ''}`} onClick={() => pick(value === p.id ? null : p.id)} title={value === p.id ? 'Tocá de nuevo para quitarlo' : undefined}>
                         <i className="dot" style={{ background: p.color }} /><span>{p.name}</span>
                         <em>{rateLabel(p)}</em>
                         {value === p.id && <Check className="picker-check" />}
@@ -102,20 +103,20 @@ export function ProjectPicker({ projects, clients, value, onChange, onCreateProj
                     ))}
                   </div>
                 ))}
-                {groups.length === 0 && <p className="picker-empty">{q ? `No hay proyectos con “${query}”.` : 'Todavía no hay proyectos. Creá uno: de una plataforma o personal.'}</p>}
+                {groups.length === 0 && <p className="picker-empty">{q ? `No hay proyectos con “${query}”.` : 'Todavía no hay proyectos de plataformas. Creá uno.'}</p>}
               </div>
-              <button type="button" className="picker-create" onClick={() => { setCreating(true); setDraft((d) => ({ ...d, name: query })) }}><Plus /> Crear proyecto nuevo</button>
+              <button type="button" className="picker-create" onClick={() => { setCreating(true); setDraft((d) => ({ ...d, name: query, clientId: d.clientId || clients[0]?.id || '' })) }}><Plus /> Crear proyecto nuevo</button>
             </>
           ) : (
             <div className="picker-form">
-              <p className="picker-group">{draft.clientId ? 'Nuevo proyecto por hora' : 'Nuevo proyecto personal'}</p>
+              <p className="picker-group">Nuevo proyecto por hora</p>
               <input autoFocus placeholder="Nombre del proyecto" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && create()} />
               <select value={draft.clientId} onChange={(e) => setDraft({ ...draft, clientId: e.target.value })} aria-label="Plataforma">
-                <option value="">{PERSONAL}</option>
                 {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
+              {!clients.length && <small className="field-help">Primero creá una plataforma en la pestaña Plataformas. Las tareas sin proyecto son personales.</small>}
               {draft.clientId && <label className="rate-input"><span>Tarifa</span><input inputMode="decimal" placeholder="0" value={draft.rate} onChange={(e) => setDraft({ ...draft, rate: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && create()} /><span>USD/h</span></label>}
-              <div className="picker-form-actions"><button type="button" className="ghost-button" onClick={() => setCreating(false)}>Cancelar</button><button type="button" className="primary-button" onClick={create} disabled={!draft.name.trim()}>Crear</button></div>
+              <div className="picker-form-actions"><button type="button" className="ghost-button" onClick={() => setCreating(false)}>Cancelar</button><button type="button" className="primary-button" onClick={create} disabled={!draft.name.trim() || !draft.clientId}>Crear</button></div>
             </div>
           )}
         </div>

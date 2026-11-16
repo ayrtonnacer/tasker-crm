@@ -21,7 +21,7 @@ export function treeStage(seconds: number): 0 | 1 | 2 {
 }
 
 /** Versión de la extensión que trae esta app: si la instalada es anterior, se avisa. */
-export const EXT_LATEST = '1.3.0'
+export const EXT_LATEST = '1.3.1'
 
 /** Cuando la extensión cortó un intento de abrir un sitio bloqueado. t = milisegundos. */
 export type Distraction = { t: number; site: string }
@@ -71,7 +71,7 @@ export type ExtState = {
   billable: boolean
   todaySeconds: number
   projects: { id: string; name: string; color: string; client: string; canBill: boolean; billableDefault: boolean }[]
-  recent: { name: string; projectId: string }[]
+  recent: { name: string; projectId: string | null }[]
   backlog: { id: string; text: string; projectId: string | null; note: string }[]
   routines: { id: string; text: string; projectId: string | null }[]
 }
@@ -94,9 +94,9 @@ export function buildExtState(input: {
   const seen = new Set<string>()
   for (const t of [...input.tasks].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)) {
     const key = `${t.name.trim().toLowerCase()}|${t.projectId}`
-    if (!t.name.trim() || !t.projectId || !ids.has(t.projectId) || seen.has(key)) continue
+    if (!t.name.trim() || (t.projectId && !ids.has(t.projectId)) || seen.has(key)) continue
     seen.add(key)
-    recent.push({ name: t.name, projectId: t.projectId })
+    recent.push({ name: t.name, projectId: t.projectId ?? null })
     if (recent.length >= 5) break
   }
   const doneToday = new Set(input.tasks.filter((t) => t.date === input.today && t.routineId).map((t) => t.routineId))
